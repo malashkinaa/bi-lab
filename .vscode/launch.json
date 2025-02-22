@@ -14,13 +14,6 @@
       "request": "launch",
       "program": "${workspaceFolder}/dashboard.py",
       "console": "integratedTerminal"
-    },
-    {
-      "name": "Debug test.py",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/test.py",
-      "console": "integratedTerminal"
     }
   ]
 }

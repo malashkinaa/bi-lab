@@ -20,24 +20,3 @@ class CsvTable:
         except Exception as e:
             print(f"Error loading data for table '{self.table_name}': {e}")
             self.df = pd.DataFrame()
-
-    # def check_columns(self, required_columns):
-    #     """Checks for the presence of required columns in the dataframe."""
-    #     if self.df is not None:
-    #         missing = [col for col in required_columns if col not in self.df.columns]
-    #         if missing:
-    #             print(f"Missing columns in the table '{self.table_name}': {missing}")
-    #         else:
-    #             print(f"All required columns are present in the table '{self.table_name}'.")
-    #     else:
-    #         print("Dataframe is empty. Please load the data first.")
-
-    # def preprocess_date(self, date_column, new_column_name):
-    #     """Converts YYMMDD format to a datetime object and creates a new column."""
-    #     if self.df is not None:
-    #         self.df[date_column] = self.df[date_column].astype(str).str.zfill(6)
-    #         self.df[new_column_name] = pd.to_datetime(
-    #             self.df[date_column], format='%y%m%d', errors='coerce'
-    #         )
-    #     else:
-    #         print("Dataframe is empty. Please load the data first.")

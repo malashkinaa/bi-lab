@@ -19,7 +19,7 @@ class BiDataset:
         self._create_district_table()
         self._create_client_table()
         self._create_card_table()
-        """Generates various fact tables"""
+        """Generates various fact tables""" # 2 measures (trans.amount, loan.amount)
         self._create_trans_loan_table()
         """Generates various pivot tables"""
         self._create_pivot_trans_by_year_district()
@@ -76,7 +76,7 @@ class BiDataset:
 
         pivot_table = pivot_facts.pivot_table(
             values='amount',
-            index='district_name',
+            index='region',
             columns='year',
             aggfunc='sum',
             fill_value=0
@@ -110,7 +110,7 @@ class BiDataset:
 
         pivot_table = pivot_facts.pivot_table(
             values='amount',
-            index='district_name',
+            index='region',
             columns='year',
             aggfunc='sum',
             fill_value=0
