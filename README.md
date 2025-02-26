@@ -61,6 +61,15 @@
 2. Аналіз загальних сум транзакцій по роках та типах карт.
 3. Аналіз загальних сум кредитів по роках і районах.
 
+   ![image](https://github.com/user-attachments/assets/4c781515-66b5-45d6-ab97-678c6b51c361)
+   ![image](https://github.com/user-attachments/assets/eb30ae77-92bd-42ce-a232-57c934dd791d)
+   ![image](https://github.com/user-attachments/assets/21ea6068-00c6-4a03-a7ae-19bab5fd85c4)
+   ![image](https://github.com/user-attachments/assets/0b95793f-911e-4f3e-8b48-0f1fe99cb1d1)
+
+
+
+
+
 #### 6. **Висновки**
 
 У ході роботи були знайдені, оброблені та структуровані дані і також реалізовані візуалізації та створені pivot таблиці. Це дозволяє виконувати глибокий аналіз банківських транзакцій та кредитів і використовувати дані для бізнес-аналітики.
