@@ -37,47 +37,92 @@ class HTMLPage:
         ]
         self.elements = self.nodes + self.edges
 
+        # self.stylesheet = [
+        #     {
+        #         'selector': 'node',
+        #         'style': {
+        #             'label': 'data(label)',
+        #             'text-valign': 'center',
+        #             'color': 'white',
+        #             'text-outline-width': 2,
+        #             'text-outline-color': '#888',
+        #             'font-size': '12px'
+        #         }
+        #     },
+        #     {
+        #         'selector': 'node.fact',
+        #         'style': {
+        #             'background-color': '#FF4136',
+        #             'shape': 'ellipse',
+        #             'width': '60px',
+        #             'height': '60px'
+        #         }
+        #     },
+        #     {
+        #         'selector': 'node.dimension',
+        #         'style': {
+        #             'background-color': '#0074D9',
+        #             'shape': 'roundrectangle',
+        #             'width': '50px',
+        #             'height': '50px'
+        #         }
+        #     },
+        #     {
+        #         'selector': 'edge',
+        #         'style': {
+        #             'width': 2,
+        #             'line-color': '#ccc',
+        #             'target-arrow-color': '#ccc',
+        #             'target-arrow-shape': 'triangle',
+        #             'curve-style': 'bezier'
+        #         }
+        #     }
+        # ]
+
         self.stylesheet = [
-            {
-                'selector': 'node',
-                'style': {
-                    'label': 'data(label)',
-                    'text-valign': 'center',
-                    'color': 'white',
-                    'text-outline-width': 2,
-                    'text-outline-color': '#888',
-                    'font-size': '12px'
-                }
-            },
-            {
-                'selector': 'node.fact',
-                'style': {
-                    'background-color': '#FF4136',
-                    'shape': 'ellipse',
-                    'width': '60px',
-                    'height': '60px'
-                }
-            },
-            {
-                'selector': 'node.dimension',
-                'style': {
-                    'background-color': '#0074D9',
-                    'shape': 'roundrectangle',
-                    'width': '50px',
-                    'height': '50px'
-                }
-            },
-            {
-                'selector': 'edge',
-                'style': {
-                    'width': 2,
-                    'line-color': '#ccc',
-                    'target-arrow-color': '#ccc',
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier'
-                }
-            }
-        ]
+    {
+        'selector': 'node',
+        'style': {
+            'label': 'data(label)',
+            'text-valign': 'center',
+            'color': 'white',
+            'text-outline-width': 2,
+            'text-outline-color': '#888',
+            'font-size': '14px'
+        }
+    },
+    {
+        'selector': 'node.fact',
+        'style': {
+            'background-color': '#FF851B',
+            'shape': 'ellipse',
+            'width': '80px',
+            'height': '80px'
+        }
+    },
+    {
+        'selector': 'node.dimension',
+        'style': {
+            'background-color': '#2ECC40',
+            'shape': 'roundrectangle',
+            'width': '70px',
+            'height': '70px'
+        }
+    },
+    {
+        'selector': 'edge',
+        'style': {
+            'width': 3,
+            'line-color': '#1E90FF',
+            'target-arrow-color': '#1E90FF',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier',
+            'opacity': 0.7
+        }
+    }
+]
+
+
 
     def generate_page(self):
         """Generates the HTML content for the financial dashboard."""
@@ -85,9 +130,9 @@ class HTMLPage:
         app.title = "1999 Czech Bank Financial"
 
         app.layout = html.Div([
-            html.H1("1999 Czech Bank Financial", style={'textAlign': 'center'}),
+            html.H1("1999 Czech Bank Financial", style={'fontFamily': 'Arial, sans-serif', 'color': '#4B0082', 'textAlign': 'center', 'fontSize': '40px', 'fontWeight': 'bold'}),
 
-            html.H2("Star Schema Structure", style={'textAlign': 'center'}),
+            html.H2("Star Schema Structure", style={'fontFamily': 'Helvetica, sans-serif', 'color': '#FF8C00', 'textAlign': 'center', 'fontSize': '32px'}),
             html.Div([
                 cyto.Cytoscape(
                     id='star-schema',
@@ -100,7 +145,7 @@ class HTMLPage:
             ]),
             html.Hr(),
 
-            html.H2("Pivot transactions by year and region", style={'textAlign': 'center'}),
+            html.H2("Pivot transactions by year and region", style={'fontFamily': 'Helvetica, sans-serif', 'color': '#FF8C00', 'textAlign': 'center', 'fontSize': '32px'}),
             dash_table.DataTable(
                 id='pivot-table-region',
                 columns=[
@@ -118,7 +163,7 @@ class HTMLPage:
                 page_size=20
             ),
 
-            html.H2("Pivot transactions by year and card", style={'textAlign': 'center'}),
+            html.H2("Pivot transactions by year and card", style={'fontFamily': 'Helvetica, sans-serif', 'color': '#FF8C00', 'textAlign': 'center', 'fontSize': '32px'}),
             dash_table.DataTable(
                 id='pivot-table-card',
                 columns=[
@@ -136,7 +181,7 @@ class HTMLPage:
                 page_size=20
             ),
 
-            html.H2("Pivot loan amount by year and district", style={'textAlign': 'center'}),
+            html.H2("Pivot loan amount by year and district", style={'fontFamily': 'Helvetica, sans-serif', 'color': '#FF8C00', 'textAlign': 'center', 'fontSize': '32px'}),
             dash_table.DataTable(
                 id='pivot-loan-region',
                 columns=[
@@ -154,7 +199,7 @@ class HTMLPage:
                 page_size=20
             ),
 
-            html.H2("Pivot loan duration avarage by year and district", style={'textAlign': 'center'}),
+            html.H2("Pivot loan duration avarage by year and district", style={'fontFamily': 'Helvetica, sans-serif', 'color': '#FF8C00', 'textAlign': 'center', 'fontSize': '32px'}),
             dash_table.DataTable(
                 id='pivot-loan-avg-region',
                 columns=[
