@@ -19,6 +19,7 @@ class BiDataset:
         self._create_district_table()
         self._create_client_table()
         self._create_card_table()
+        self._create_account_table()
         """Generates various fact tables""" # 2 measures (trans.amount, loan.amount)
         self._create_trans_loan_table()
         """Generates various pivot tables"""
@@ -39,6 +40,9 @@ class BiDataset:
 
     def _create_card_table(self):
         self.tables['dim_card'] = self.csvDataset.tables['card'].df
+
+    def _create_account_table(self):
+        self.tables['dim_account'] = self.csvDataset.tables['account'].df
 
     def _create_trans_loan_table(self):
         trans = self.csvDataset.tables["trans"].df
@@ -81,7 +85,6 @@ class BiDataset:
             aggfunc='sum',
             fill_value=0
         )
-        print(pivot_table.head())
         self.tables['pivot_by_year_district'] = pivot_table
 
     def _create_pivot_trans_by_year_card(self):
@@ -98,7 +101,6 @@ class BiDataset:
             aggfunc='sum',
             fill_value=0
         )
-        print(pivot_table.head())
         self.tables['pivot_by_year_card'] = pivot_table
 
     def _create_pivot_loan_by_year_district(self):
@@ -115,7 +117,6 @@ class BiDataset:
             aggfunc='sum',
             fill_value=0
         )
-        print(pivot_table.head())
         self.tables['pivot_loan_by_year_district'] = pivot_table
 
     def _create_pivot_loan_avarage_by_year_district(self):
@@ -133,7 +134,6 @@ class BiDataset:
             fill_value=0
         )
         pivot_table = pivot_table.round(2)
-        print(pivot_table.head())
         self.tables['pivot_loan_avarage_by_year_district'] = pivot_table
 
     def _create_date_table(self):
@@ -172,3 +172,6 @@ class BiDataset:
         else:
             print("No valid date entries found in any table to create a dim_date table.")
 
+    def list_tables(self):
+        """Lists all tables available in the dataset."""
+        return list(self.tables.keys())

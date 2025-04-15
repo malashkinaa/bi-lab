@@ -1,0 +1,5 @@
+dash
+dash-cytoscape
+pandas
+scikit-learn
+dash_bootstrap_components
