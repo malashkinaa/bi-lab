@@ -2,7 +2,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, dcc, html, dash_table
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+import base64
+from io import BytesIO
 
 class HTMLPage:
     """Class for generating HTML content for the financial dashboard."""
@@ -13,11 +14,11 @@ class HTMLPage:
 
     def generate_page(self):
         app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-        app.title = "Business Analytics Dashboard"
+        app.title = "Data Mining Dashboard"
                 
         app.layout = dbc.Container([
             dbc.Row([
-                dbc.Col(html.H1("Business Analytics Dashboard"), className="text-center mb-4")
+                dbc.Col(html.H1("Data Mining Dashboard"), className="text-center mb-4")
             ]),
 
             # Task 1: Classification of Loan Statuses
@@ -61,7 +62,25 @@ class HTMLPage:
                     )
                 ])
             ], className="mb-4"),
+
+
+            # Task 4: Dependency Between Transaction Volume and Credit Reliability
+            dbc.Card([
+                dbc.CardHeader("Task 4: Dependency Between Transaction Volume and Credit Reliability"),
+                dbc.CardBody([
+                    dash_table.DataTable(
+                        columns=[{"name": i, "id": i} for i in self.datamining.df_dependencies.columns],
+                        data=self.datamining.df_dependencies.to_dict('records'),
+                        style_cell={'textAlign': 'center'},
+                        style_header={'backgroundColor': '#f1f1f1', 'fontWeight': 'bold'},
+                        page_size=5
+                    )
+                ]),
+                # confusion_matrix_image(self.datamining.cm_dependencies, "Dependencies Confusion Matrix"),
+            ], className="mb-4"),
+
         ], fluid=True)
 
-
         app.run(debug=True, port=8888)
+
+

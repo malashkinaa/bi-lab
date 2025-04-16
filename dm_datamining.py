@@ -1,20 +1,18 @@
-from datetime import datetime
-import random
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
-    mean_squared_error,
-    silhouette_score,
-    confusion_matrix
+    r2_score,
+    silhouette_score
 )
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.cluster import MiniBatchKMeans, DBSCAN, AgglomerativeClustering
-from sklearn.svm import SVC
-from sklearn.decomposition import PCA
+from sklearn.cluster import MiniBatchKMeans, AgglomerativeClustering
+from sklearn.svm import LinearSVC
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import LabelEncoder
 
 class Datamining:
     """Class to handle BI operations and generate BI tables."""
@@ -38,10 +36,6 @@ class Datamining:
         data = pd.merge(fact_loan, dim_client, on="client_id")
         data = pd.merge(data, dim_account, on="account_id")
         data.rename(columns={'district_id_x': 'loan_district', 'date_y': 'account_date'}, inplace=True)
-
-        # calclate age based on birth_date
-        # data['birth_date'] = pd.to_datetime(data['birth_date'])
-        # data['age'] = (pd.to_datetime('today') - pd.to_datetime(data['birth_date'])).dt.days // 365
 
         print("Розпочато завдання класифікації статусу кредитів...")
         X = data[['amount', 'duration', 'payments', 'client_age', 'loan_district', 'account_date']]
@@ -89,8 +83,7 @@ class Datamining:
         return df_results, y_test, y_pred_rf
     
     def extract_age(self, birth_number, reference_year=2025):
-        """Для 6- або 7-цифрового birth_number: YYMMDD.
-        Якщо YY<=25 => 2000+YY, інакше => 1900+YY."""
+        """Для 6- або 7-цифрового birth_number: YYMMDD. Якщо YY<=25 => 2000+YY, інакше => 1900+YY."""
         if pd.isna(birth_number):
             return 0
         try:
@@ -114,37 +107,33 @@ class Datamining:
         # --- Step 1: Prepare age from birth_number ---
         dim_client["age"] = dim_client["birth_number"].apply(self.extract_age)
 
-        # # --- Step 2: Extract unique clients from fact_trans and fact_loan ---
-        # clients_from_trans = fact_trans[["client_id", "account_id"]].drop_duplicates()
-        # clients_from_loan = fact_loan[["client_id", "account_id"]].drop_duplicates()
-
-        # --- Step 3: Aggregate transaction data per client ---
+        # --- Step 2: Aggregate transaction data per client ---
         trans_agg = fact_trans.groupby("client_id").agg(
             total_transactions=("amount", "count"),
             avg_transaction_amount=("amount", "mean"),
             avg_balance=("balance", "mean")
         ).reset_index()
 
-        # --- Step 4: Aggregate loan info per client ---
+        # --- Step 3: Aggregate loan info per client ---
         loan_agg = fact_loan.groupby("client_id").agg(
             has_loan=("loan_id", lambda x: 1),
             avg_loan_amount=("amount", "mean")
         ).reset_index()
 
-        # --- Step 5: Determine card ownership from fact_trans and fact_loan ---
+        # --- Step 4: Determine card ownership from fact_trans and fact_loan ---
         trans_cards = fact_trans[["client_id", "card_id"]].dropna().copy()
         loan_cards = fact_loan[["client_id", "card_id"]].dropna().copy()
         card_clients = pd.concat([trans_cards, loan_cards]).dropna().drop_duplicates()
         card_clients["has_card"] = 1
         card_flag = card_clients.groupby("client_id")["has_card"].max().reset_index()
 
-        # --- Step 6: Merge everything into client-level features ---
+        # --- Step 5: Merge everything into client-level features ---
         features = dim_client[["client_id", "age"]]
         features = features.merge(trans_agg, on="client_id", how="left")
         features = features.merge(loan_agg, on="client_id", how="left")
         features = features.merge(card_flag, on="client_id", how="left")
 
-        # --- Step 7: Clean up missing values ---
+        # --- Step 6: Clean up missing values ---
         features["has_loan"] = features["has_loan"].fillna(0)
         features["has_card"] = features["has_card"].fillna(0)
         features = features.fillna(0)
@@ -166,20 +155,6 @@ class Datamining:
 
         print("Обчислення Silhouette Score для MiniBatchKMeans...")
         silhouette_km = silhouette_score(X, labels_km)
-
-        # print("Навчання Random Forest Classifier для кластеризації...")
-        # rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
-        # rf.fit(X, labels_km)
-        # labels_rf = rf.predict(X)
-
-        # print("Обчислення Silhouette Score для Random Forest Classification...")
-        # silhouette_rf = silhouette_score(X, labels_rf)
-
-        # print("Навчання DBSCAN кластеризатора...")
-        # db = DBSCAN(eps=0.5, min_samples=5)
-        # labels_db = db.fit_predict(X)
-        # print("Обчислення Silhouette Score для DBSCAN...")
-        # silhouette_db = silhouette_score(X, labels_db)
 
         print("Навчання AgglomerativeClustering кластеризатора...")
         agg = AgglomerativeClustering(n_clusters=3)
@@ -216,49 +191,142 @@ class Datamining:
         'amount': 'sum',              # total transaction volume
         'trans_id': 'count',          # number of transactions
         'balance': 'mean',            # average balance
-        'frequency': 'last',         # transaction frequency
+        'frequency': 'last',         # account frequency status
         'region': 'first',            # from district
         'client_age': 'first',      # will be used to get age
     }).reset_index().rename(columns={'trans_id': 'trans_count', 'amount': 'trans_amount'})
 
+        # convert strings to numbers because models like LinearRegression, RandomForest, SVC, etc. do not support non-numeric (string) values in X
+        le = LabelEncoder()
+        agg['frequency_encoded'] = le.fit_transform(agg['frequency'])
+        agg['region_encoded'] = le.fit_transform(agg['region'])
 
         print("Розпочато завдання прогнозу транзакцій...")
-        X = agg[['trans_count', 'balance', 'client_age']] # add frequency, 'region',
-        y = agg['trans_amount']
-
-        if X.empty or y.empty:
-            print("Немає даних для регресії.")
-            return pd.DataFrame([{"Model": "NoData", "MSE": 0}]), None, None
-
         print("Розділення даних на тренувальні та тестові...")
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.3, random_state=42
-        )
+        # Filter training and test data
+        past = agg[agg['year'] < 1998] # training past data
+        present = agg[agg['year'] == 1998] # test data for 1998
+
+        future = agg[agg['year'] == 1998].copy() # future data for 1999, based on their 1998 behavior
+        future['year'] = 1999  # simulate next year in the copy
+
+        if past.empty or present.empty:
+            print("Немає даних для прогнозу.")
+            return pd.DataFrame([{"Model": "NoData", "MSE": 0}]), None, None
+        
+        X_train = past[['trans_count', 'balance', 'client_age', 'frequency_encoded', 'region_encoded']]
+        Y_train = past['trans_amount']
+
+        X_test = present[['trans_count', 'balance', 'client_age', 'frequency_encoded', 'region_encoded']]
+        Y_test = present['trans_amount']
+
+        # use the same features for real future prediction
+        X_future = future[['trans_count', 'balance', 'client_age', 'frequency_encoded', 'region_encoded']]  
+        
 
         print("Навчання Linear Regression...")
         lr = LinearRegression()
-        lr.fit(X_train, y_train)
-        y_pred_lr = lr.predict(X_test)
-        mse_lr = mean_squared_error(y_test, y_pred_lr)
+        lr.fit(X_train, Y_train) # train the model on the past data
+        y_pred_lr = lr.predict(X_test) # predict the test in present year
+        r2_lr = r2_score(Y_test, y_pred_lr)
+        future['lr_trans_amount'] = lr.predict(X_future)  # predict the real future
 
         print("Навчання Random Forest Regressor...")
         rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-        rf.fit(X_train, y_train)
+        rf.fit(X_train, Y_train)
         y_pred_rf = rf.predict(X_test)
-        mse_rf = mean_squared_error(y_test, y_pred_rf)
+        r2_rf = r2_score(Y_test, y_pred_rf)
+        future['rf_trans_amount'] = rf.predict(X_future)
 
-        print("Регресія транзакцій завершена.")
+        print("Прогноз транзакцій завершено.")
 
         results = {
             'Model': ['Linear Regression', 'Random Forest Regressor'],
-            'MSE': [round(mse_lr, 4), round(mse_rf, 4)]
+            'R2 Score': [round(r2_lr, 4), round(r2_rf, 4)]
         }
 
         df_results = pd.DataFrame(results)
-        return df_results, y_test, y_pred_rf
+        return df_results, Y_test, y_pred_rf
+
+    # Do clients with high transaction volumes tend to pay off loans more reliably? 
+    def dependencies_task(self):
+        fact_loan = self.biDataset.tables['fact_loan']
+        fact_trans = self.biDataset.tables['fact_trans']
+        dim_client = self.biDataset.tables['dim_client']
+
+        # --- Step 1: Aggregate transaction data per client ---
+        trans_agg = fact_trans.groupby("client_id").agg(
+            total_transactions=("amount", "count"),
+            avg_balance=("balance", "mean")
+        ).reset_index()
+
+        # --- Step 2: Aggregate loan info per client ---
+        # A = fully paid
+        # B = partially paid
+        # C = late
+        # D = defaulted
+        status_map = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+        fact_loan['status_number'] = fact_loan['status'].map(status_map)
+        loan_agg = fact_loan.groupby("client_id").agg(
+            has_loan=("loan_id", lambda x: 1),
+            loan_status=("status_number", "mean") # overall reliability score
+        ).reset_index()
+
+        # --- Step 3: Merge 3 tables into a table called features ---
+        features = dim_client[["client_id", "age"]]
+        features = features.merge(trans_agg, on="client_id", how="left")
+        features = features.merge(loan_agg, on="client_id", how="left")
+
+        # --- Step 4: Fill missing values with 0---
+        features["total_transactions"] = features["total_transactions"].fillna(0)
+        features["avg_balance"] = features["avg_balance"].fillna(0)
+        features = features.fillna(0)
+
+        X = features[['total_transactions', 'avg_balance']] 
+        Y = features['loan_status']
+
+        if X.empty:
+            print("Немає даних для виявлення залежностей.")
+            return pd.DataFrame([{"Model": "NoData", "Accuracy": 0, "F1 Score": 0}]), None, None
+
+        if Y.nunique() < 2:
+            print("Недостатньо класів для виявлення залежностей.")
+            return pd.DataFrame([{"Model": "NoData", "Accuracy": 0, "F1 Score": 0}]), None, None
+
+        print("Розділення даних на тренувальні та тестові...")
+        X_train, X_test, Y_train, Y_test = train_test_split(
+            X, Y, test_size=0.3, random_state=42, stratify=Y
+        )
+
+        print("Навчання LinearSVC ...")
+        # Use a pipeline to ensure the features are scaled (important for SVMs)
+        svc = make_pipeline(StandardScaler(), LinearSVC(random_state=42, max_iter=10000))
+        svc.fit(X_train, Y_train) # Train the model on 70%
+        y_pred_svc = svc.predict(X_test) # Asking the already trained model to predict the remaining 30%
+        accuracy_svc = accuracy_score(Y_test, y_pred_svc)
+        f1_svc = f1_score(Y_test, y_pred_svc, average='weighted')
+
+        print("Навчання Random Forest Classifier...")
+        rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+        rf.fit(X_train, Y_train)
+        y_pred_rf = rf.predict(X_test)
+        accuracy_rf = accuracy_score(Y_test, y_pred_rf)
+        f1_rf = f1_score(Y_test, y_pred_rf, average='weighted')
+
+        print("Виявлення залежностей завершено.")
+
+        results = {
+            'Model': ['LinearSVC', 'Random Forest Classifier'],
+            'Accuracy': [round(accuracy_svc, 4), round(accuracy_rf, 4)],
+            'F1 Score': [round(f1_svc, 4), round(f1_rf, 4)]
+        }
+
+        df_results = pd.DataFrame(results)
+        return df_results, Y_test, y_pred_rf
 
     def processing(self):
         self.df_classification, self.y_test_class, self.y_pred_rf_class = self.classification_task()
         self.df_clustering, self.labels_km, self.labels_rf = self.clastering_task()
         self.df_forecasting, self.forecasting_test, self.forecasting_rf = self.forecasting_task()
-        
+        self.df_dependencies, self.dependencies_test, self.dependencies_rf = self.dependencies_task()
+
